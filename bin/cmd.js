@@ -25,6 +25,7 @@ var path = require('path');
 var prelude = fs.readFileSync(__dirname + '/../bundle/prelude.js', 'utf8');
 
 var bundle, launch;
+var childProcesses = [];
 var scripts = [];
 var htmlQueue = [];
 var pending = 4;
@@ -134,6 +135,7 @@ var server = http.createServer(function (req, res) {
         req.pipe(xws(function (stream) {
             stream.pipe(process.stdout, { end: false });
             stream.pipe(finished(function (results) {
+                childProcesses.forEach(function(ps) { ps.kill(); });
                 if (results.ok) {
                     process.exit(0);
                 }
@@ -171,6 +173,8 @@ var customServer = pkg.testling.server && (function () {
     ps.on('exit', function (code) {
         console.error('testling.server exited with status: ' + code);
     });
+
+    childProcesses.push(ps);
 
     return { port: env.PORT };
 })();
@@ -256,6 +260,7 @@ function ready () {
 
         launch(href, opts, function (err, ps) {
             if (err) return console.error(err);
+            childProcesses.push(ps);
         });
     }
 }
